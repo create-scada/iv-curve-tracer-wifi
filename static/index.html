@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IV Curve Tracer</title>
+    <link rel="stylesheet" href="pure-min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main style="display: grid; height: 100vh; grid-template-columns: 300px 70vw;">
+        <div
+            style="height: 100vh; background-color: #424242; color: whitesmoke; display: flex; flex-direction: column; text-align: center;">
+            <h1>IV Curve Tracer</h1>
+            <h2 id="msg"></h2>
+            <button class="pure-button pure-button-primary" style="margin-bottom: 20px;" onclick="runTrace()"
+                id="startButton">Run Trace</button>
+            <button class="pure-button pure-button-primary button-warning" onclick="clearReadings()" id="clearButton">
+                Clear Readings
+            </button>
+            <h2>Traces</h2>
+            <div id="traces" style="display: flex; flex-direction: column;">
+                <h1></h1>
+            </div>
+        </div>
+        <div id="chartParent" style="display: flex; align-items: center; justify-content: center;">
+            <h1 style="color:#424242;">Run or view trace to begin</h1>
+        </div>
+    </main>
+
+    <script src="chart.js"></script>
+    <script type="text/javascript">
+
+        var host = "";
+        var i = 60;
+        var timerHandle = 0;
+        var msgRef = document.getElementById("msg");
+        var tracesRef = document.getElementById("traces");
+        var chartParentRef = document.getElementById("chartParent");
+
+        function refreshLater() {
+            i -= 1;
+            msgRef.innerHTML = i + " seconds left";
+            if (i == 0) {
+                clearInterval(timerHandle);
+                window.location.reload();
+            }
+        }
+
+        function clearReadings() {
+            if (confirm("Clearing ALL old readings. Are you sure?")) {
+                msgRef.innerHTML = "Clearing...";
+                fetch(`${host}/clear`).then(() => window.location.reload());
+            }
+        }
+
+        async function runTrace() {
+            if (confirm("Running trace. Are you sure?")) {
+                timerHandle = setInterval(refreshLater, 1000);
+                msgRef.innerHTML = "Running...";
+                await fetch(`${host}/run`).then(() => window.location.reload());
+            }
+        }
+
+        function csv2arr(csvString) {
+            var lines = csvString.split('\n');
+            var result = [];
+            for (var i = 1; i < lines.length; i++) {
+                var splitLine = lines[i].split(',');
+                var voltage = parseFloat(splitLine[0]);
+                var current = parseFloat(splitLine[1]);
+                result.push({ x: voltage, y: current });
+            }
+            return result;
+        }
+
+        function viewTrace(filename) {
+
+            var canvasHtml = '<canvas style="height: 100vh; background-color: white;" id="chart"></canvas>';
+            chartParentRef.innerHTML = canvasHtml;
+            var chartRef = document.getElementById("chart");
+
+            fetch(`${host}/trace?file=${filename}`)
+                .then((response) => response.text())
+                .then((data) => {
+
+                    x = [];
+                    y = [];
+                    plotdata = [];
+
+                    for (let line of data.split('\n')) {
+                        const parts = line.split(',');
+                        plotdata.push({ x: parts[0], y: parts[1] })
+                    }
+
+                    const configdata = {
+                        datasets: [{
+                            label: 'IV Curve Trace',
+                            data: plotdata,
+                            backgroundColor: 'rgb(255, 99, 132)'
+                        }],
+                    };
+                    const config = {
+                        type: 'scatter',
+                        data: configdata,
+                        options: {
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Voltage'
+                                    },
+                                    type: 'linear',
+                                    position: 'bottom'
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Current'
+                                    },
+                                }
+                            }
+                        }
+                    };
+
+                    new Chart(chartRef, config);
+
+                });
+        }
+
+
+        function loadList() {
+            fetch(`${host}/list`)
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.length == 0) {
+                        tracesRef.innerHTML = "<h3>No traces yet</h3>";
+                    }
+                    for (var value of data) {
+                        tracesRef.innerHTML += `
+                            <button onclick="viewTrace('${value}')" class='pure-button pure-button-primary' style="margin-bottom: 20px;">${value}</button>
+                        `;
+                    }
+                })
+        }
+
+        if (document.addEventListener) {
+            document.addEventListener('DOMContentLoaded', loadList, false);
+        }
+        else {
+            window.onload = loadList;
+        }
+
+    </script>
+
+
+</body>
+
+</html>

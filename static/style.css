@@ -1,0 +1,8 @@
+button {
+    font-weight: bold;
+    font-size: 120%;
+}
+
+.button-warning {
+    background: rgb(202, 60, 60);
+}
