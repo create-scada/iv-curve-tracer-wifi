@@ -1,1 +1,1 @@
-Drivers for Impact Allies' Create-Scada IV Curve Tracer workshop/labs. A link for the workshop can be found [here](https://www.impactallies.com/iv-curve-tracer-lab).
+Drivers for Impact Allies' Create-Scada IV Curve Tracer workshop/labs. A link for the workshop can be found [here](https://www.impactallies.com/iv-curve-tracer-lab). Schematics for the lab can also be found [here](https://github.com/create-scada/iv-curve-tracer-schematic).
